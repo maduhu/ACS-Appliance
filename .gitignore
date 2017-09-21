@@ -1,0 +1,18 @@
+# OSX
+[Tt]humbs.db
+*.DS_Store
+
+# Packer
+packer_cache/
+output-*/
+*.iso
+*.xsupdate
+*.ova
+*.ovf
+*.box
+*.key
+*.iso
+*.vdi
+*.retry
+*.bz2
+scrapbook

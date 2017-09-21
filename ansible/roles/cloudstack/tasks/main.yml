@@ -1,0 +1,95 @@
+---
+- name: Import ShapeBlue GPG key
+  shell: rpm --import {{ cs_gpgkey }}
+
+- name: Setup Apache Cloudstack Repo file.
+  template: src=cloudstack.repo.j2 dest=/etc/yum.repos.d/cloudstack.repo
+
+- name: Install CloudStack packages
+  yum: name={{ item }} state=present enablerepo=base
+  with_items:
+    - mysql
+    - cloudstack-management
+
+- name: rename CloudStack title in browser
+  shell: sed -i "/document.title =/ c\        document.title = \"{{ cs_browsertitle }}\";" /usr/share/cloudstack-management/webapps/client/scripts/cloudStack.js
+
+- name: re-gzip file
+  shell: gzip -cf /usr/share/cloudstack-management/webapps/client/scripts/cloudStack.js > /usr/share/cloudstack-management/webapps/client/scripts/cloudStack.js.gz
+
+- name: install rng-tools to get entropy
+  yum: name=rng-tools state=present
+
+- name: use rngd to generate entropy
+  command: rngd -r /dev/urandom
+  tags:
+    - setup_db
+
+- name: cloudstack-setup-databases
+  shell: "/usr/bin/cloudstack-setup-databases '{{ bc_cloudsqluser }}':'{{ bc_cloudsqlpass }}'@'{{ bc_mgmtip }}' --deploy-as={{ bc_rootuser }}:'{{ bc_rootpwd }}' -i {{ bc_mgmtip }}"
+
+- name: Setup CloudStack Manager
+  command: /usr/bin/cloudstack-setup-management
+  when: ansible_distribution_major_version == "6"
+
+- name: Local copy of system VM template to NGINX folder
+  copy: src={{ item }} dest=/usr/share/nginx/html/ mode=0755
+  with_fileglob:
+    - ../../../../iso/{{ cs_sysvmtemplate_filename }}
+    - ../../../../iso/{{ cs_centos53x64_filename }}
+
+- name: Seed system VM template
+  shell: /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m /exports/secondary -u {{ bc_mgmtip }}/{{ cs_sysvmtemplate_filename }} -h kvm -F
+
+- name: Update DB with CentOS template URL
+  shell: mysql -u {{ bc_rootuser }} -p{{ bc_rootpwd }} -e \ "UPDATE cloud.vm_template SET url='{{ bc_mgmtip }}/{{ cs_sysvmtemplate_filename }}' WHERE id=4;"
+
+- name: Tweak database settings
+  shell: mysql -u {{ bc_rootuser }} -p{{ bc_rootpwd }} cloud -e "{{ item }}"
+  with_items:
+    - "UPDATE cloud.configuration SET value='60' WHERE name='expunge.delay';"
+    - "UPDATE cloud.configuration SET value='60' WHERE name='expunge.interval';"
+    - "UPDATE cloud.configuration SET value='60' WHERE name='account.cleanup.interval';"
+    - "UPDATE cloud.configuration SET value='60' WHERE name='capacity.skipcounting.hours';"
+    - "UPDATE cloud.configuration SET value='0.99' WHERE name='cluster.cpu.allocated.capacity.disablethreshold';"
+    - "UPDATE cloud.configuration SET value='0.99' WHERE name='cluster.memory.allocated.capacity.disablethreshold';"
+    - "UPDATE cloud.configuration SET value='0.99' WHERE name='pool.storage.capacity.disablethreshold';"
+    - "UPDATE cloud.configuration SET value='0.99' WHERE name='pool.storage.allocated.capacity.disablethreshold';"
+    - "UPDATE cloud.configuration SET value='60000' WHERE name='capacity.check.period';"
+    - "UPDATE cloud.configuration SET value='1' WHERE name='event.purge.delay';"
+    - "UPDATE cloud.configuration SET value='60' WHERE name='network.gc.interval';"
+    - "UPDATE cloud.configuration SET value='60' WHERE name='network.gc.wait';"
+    - "UPDATE cloud.configuration SET value='600' WHERE name='vm.op.cleanup.interval';"
+    - "UPDATE cloud.configuration SET value='60' WHERE name='vm.op.cleanup.wait';"
+    - "UPDATE cloud.configuration SET value='600' WHERE name='vm.tranisition.wait.interval';"
+    - "UPDATE cloud.configuration SET value='60' WHERE name='vpc.cleanup.interval';"
+    - "UPDATE cloud.configuration SET value='4' WHERE name='cpu.overprovisioning.factor';"
+    - "UPDATE cloud.configuration SET value='8' WHERE name='storage.overprovisioning.factor';"
+    - "UPDATE cloud.configuration SET value='{{ bc_mgmtip }}/32' WHERE name='secstorage.allowed.internal.sites';"
+    - "UPDATE cloud.configuration SET value='{{ bc_mgmtnet }}' WHERE name='management.network.cidr';"
+    - "UPDATE cloud.configuration SET value='{{ bc_mgmtip }}' WHERE name='host';"
+    - "UPDATE cloud.configuration SET value='false' WHERE name='check.pod.cidrs';"
+    - "UPDATE cloud.configuration SET value='0' WHERE name='network.throttling.rate';"
+    - "UPDATE cloud.configuration SET value='0' WHERE name='vm.network.throttling.rate';"
+    - "UPDATE cloud.configuration SET value='GMT' WHERE name='usage.execution.timezone';"
+    - "UPDATE cloud.configuration SET value='16:00' WHERE name='usage.stats.job.exec.time';"
+    - "UPDATE cloud.configuration SET value='true' WHERE name='enable.dynamic.scale.vm';"
+    - "UPDATE cloud.configuration SET value='9000' WHERE name='secstorage.vm.mtu.size';"
+    - "UPDATE cloud.configuration SET value='60' WHERE name='alert.wait';"
+    - "UPDATE cloud.service_offering SET ram_size='128', speed='128' WHERE vm_type='domainrouter';"
+    - "UPDATE cloud.service_offering SET ram_size='128', speed='128' WHERE vm_type='elasticloadbalancervm';"
+    - "UPDATE cloud.service_offering SET ram_size='128', speed='128' WHERE vm_type='secondarystoragevm';"
+    - "UPDATE cloud.service_offering SET ram_size='128', speed='128' WHERE vm_type='internalloadbalancervm';"
+    - "UPDATE cloud.service_offering SET ram_size='128', speed='128' WHERE vm_type='consoleproxy';"
+
+
+- name: Copy Cloudmonkey zone create script to mgmt server
+  template: src="deployzone.sh.j2" dest="/tmp/deployzone.sh" mode=0744
+
+- name: "wait for ACS Management Service to come up"
+  shell: "curl http://127.0.0.1:8080/client/api --connect-timeout 5"
+  register: result
+  until: result.stdout.find("unable to verify user") != -1
+  retries: 100
+  tags:
+    - buildzone

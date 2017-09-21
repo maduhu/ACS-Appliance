@@ -1,0 +1,8 @@
+---
+
+- include: fetchisos.yml iso="{{ item }}"
+  with_items:
+  - "{{ c6isourl }}"
+
+
+

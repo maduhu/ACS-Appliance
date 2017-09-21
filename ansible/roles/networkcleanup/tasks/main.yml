@@ -1,0 +1,11 @@
+---
+
+- name: Clean old DHCP leases and udev rules, create tools mountpoint
+  file: path={{ item.path }} state={{ item.action }}
+  with_items:
+    - { path: '/var/lib/dhclient/*', action: 'absent' }
+    - { path: '/etc/udev/rules.d/70-persistent-net.rules', action: 'absent' }
+    - { path: '/etc/udev/rules.d/70-persistent-net.rules', action: 'directory' }
+
+- name: Remove MAC addresses in network scripts
+  shell: sed -i "s/HWADDR=.*//" /etc/sysconfig/network-scripts/ifcfg-*

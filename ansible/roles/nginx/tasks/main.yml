@@ -1,0 +1,25 @@
+---
+
+- name: Install nginx
+  yum: name={{ item }} state=present
+  with_items:
+    - nginx
+
+- name: Ensure Nginx service is started and set to start on boot (centos/rhel7)
+  service: name=nginx state=restarted enabled=yes
+
+- name: Open tcp/80
+  firewalld:
+    service: http
+    permanent: true
+    state: enabled
+    immediate: yes
+  when: ansible_distribution_major_version == "7"
+
+- name: Ensure Firewall Rules are in place for Nginx
+  shell: "iptables -I INPUT -p tcp -m tcp --dport 80 -j ACCEPT"
+  when: ansible_distribution_major_version == "6"
+
+- name: IPtables save config
+  shell: "iptables-save > /etc/sysconfig/iptables"
+  when: ansible_distribution_major_version == "6"

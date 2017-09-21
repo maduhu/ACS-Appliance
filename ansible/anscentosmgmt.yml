@@ -1,0 +1,14 @@
+- name: ShapeBlue CentOS7 CloudStack 4.9 management build for packer
+  hosts: all
+  vars:
+    RemoveISO: true
+  roles:
+    - centosbasicbuild
+    - nginx
+    - mysql
+    - nfs
+    - kvm
+    - cloudstack
+    - cloudmonkey
+    - networkcleanup
+    - zerodisk

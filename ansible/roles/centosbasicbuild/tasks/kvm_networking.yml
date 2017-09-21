@@ -1,0 +1,70 @@
+---
+
+#Copyright 2016 ShapeBlue
+#
+#Licensed under the Apache License, Version 2.0 (the "License");
+#you may not use this file except in compliance with the License.
+#You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+#Unless required by applicable law or agreed to in writing, software
+#distributed under the License is distributed on an "AS IS" BASIS,
+#WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#See the License for the specific language governing permissions and
+#limitations under the License.
+
+- name: Hostname
+  replace: dest=/etc/sysconfig/network regexp='^HOSTNAME=localhost.localdomain' replace='HOSTNAME={{ bc_mgmthost | lower }}{{ bc_dnsdomain | lower }}'
+
+- name: Hosts file
+  lineinfile: dest=/etc/hosts line="{{ bc_mgmtip }}   {{ bc_mgmthost | lower }} {{ bc_mgmthost | lower }}{{ bc_dnsdomain | lower }}" state=present
+
+- name: Configure eth0
+  template: src=eth0.j2 dest=/etc/sysconfig/network-scripts/ifcfg-eth0
+
+- name: Create mgmt-link-local
+  template: src=eth0.4000.j2 dest=/etc/sysconfig/network-scripts/ifcfg-eth0.4000
+
+- name: Configure Mgmt bridge
+  template: src=kvm-cloudbr-mgmt.j2 dest="/etc/sysconfig/network-scripts/ifcfg-{{ kvm_mgmt_network_label }}"
+
+- name: Create guest-public-link-local
+  template: src=guestpub-lo.j2 dest=/etc/sysconfig/network-scripts/guestpub-lo
+
+- name: Configure eth1
+  template: src=eth1.j2 dest=/tmp/ifcfg-eth1
+
+- name: Configure bridge 2
+  template: src=kvm-cloudbr2.j2 dest="/etc/sysconfig/network-scripts/ifcfg-cloudbr2"
+
+
+- name: Configure eth2 (Advanced Networking)
+  template: src=kvm-eth2.j2 dest=/tmp/ifcfg-eth2
+  when: env_zonetype|lower == "advanced"
+
+
+- name: Configure eth2 (Basic Networking)
+  template: src=kvm-eth2-basic.j2 dest=/tmp/ifcfg-eth2.{{ hostvars['localhost']['env_guestnetvlan'] }}
+  when: env_zonetype|lower == "basic"
+
+- name: Configure bridge 2 (Basic Networking)
+  template: src=kvm-cloudbr2.j2 dest="/tmp/ifcfg-{{ kvm_guest_network_label }}"
+  when: env_zonetype|lower == "basic"
+
+- name: Configure bridge 2
+  template: src=kvm-cloudbr2.j2 dest="/tmp/ifcfg-{{ kvm_public_network_label }}"
+  when: env_zonetype|lower == "advanced"
+
+
+- name: Configure eth3 (Advanced Networking)
+  template: src=kvm-eth3.j2 dest=/tmp/ifcfg-eth3
+  when: env_zonetype|lower == "advanced"
+
+- name: Configure bridge 3
+  template: src=kvm-cloudbr2.j2 dest="/tmp/ifcfg-{{ kvm_guest_network_label }}"
+  when: env_zonetype|lower == "advanced"
+
+- name: restart networking
+  service: name=network state=restarted
+

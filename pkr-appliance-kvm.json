@@ -1,0 +1,47 @@
+{
+  "description": "APACHE CLOUDSTACK Appliance",
+  "_comment": "This builds an Apache CloudStack Appliance.",
+  "variables": {
+    "build_version": "0.0.1",
+    "buildvmname": "ACS410mgmt",
+    "vmmem": "4096",
+    "vmvcpus": "2"
+  },
+  "builders":  [
+    {
+      "type": "qemu",
+      "iso_url": "/packer/iso/CentOS-6.9-x86_64-minimal.iso",
+      "iso_checksum": "af4a1640c0c6f348c6c41f1ea9e192a2",
+      "iso_checksum_type": "md5",
+      "floppy_files": [
+        "scripts/centos-kickstart-6.7.cfg"
+      ],
+      "output_directory": "output_centos",
+      "shutdown_command": "shutdown -P now",
+      "disk_size": 40520,
+      "format": "qcow2",
+      "headless": "false",
+      "accelerator": "kvm",
+      "ssh_host_port_min": 2222,
+      "ssh_host_port_max": 2229,
+      "ssh_username": "root",
+      "ssh_password": "password",
+      "ssh_port": 22,
+      "ssh_wait_timeout": "600s",
+      "vm_name": "{{user `buildvmname`}}",
+      "net_device": "virtio-net",
+      "disk_interface": "virtio",
+      "boot_wait": "10s",
+      "boot_command": [
+        "<tab> text ks=floppy:/centos-kickstart-6.7.cfg<enter><wait>"
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "ansible",
+  	  "playbook_file": "ansible/anscentosmgmt.yml",
+      "user": "root"
+    }
+  ]
+}

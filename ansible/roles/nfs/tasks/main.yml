@@ -1,0 +1,72 @@
+---
+
+- name: Install all NFS v3 requirements
+  yum: name={{ item }} state=present
+  with_items:
+    - rpcbind
+    - nfs-utils
+
+- name: Create NFS folders
+  file: state=directory path={{ item }} mode=0777
+  with_items:
+    - "/exports"
+
+- name: Create NFS folders
+  file: state=directory path={{ item }} mode=0755
+  with_items:
+    - "/exports/primary"
+    - "/exports/secondary"
+
+- name: Update /etc/exports
+  lineinfile: dest=/etc/exports line="/exports *(rw,async,no_root_squash)"
+
+- name: replace NFS config
+  action: template src=c6sysconfignfs.j2 dest=/etc/sysconfig/nfs
+  when: ansible_distribution_major_version == "6"
+
+- name: replace NFS config
+  action: template src=c7sysconfignfs.j2 dest=/etc/sysconfig/nfs
+  when: ansible_distribution_major_version == "7"
+
+- name: Open NFS
+  firewalld:
+    service: nfs
+    permanent: true
+    state: enabled
+    immediate: yes
+  when: ansible_distribution_major_version == "7"
+
+- name: Iptables
+  shell: "iptables -I INPUT -p {{ item.prot }}  -m {{ item.prot }} --dport {{ item.port }} -j ACCEPT"
+  with_items:
+    - { prot: "udp", port: "111" }
+    - { prot: "tcp", port: "111" }
+    - { prot: "tcp", port: "2049" }
+    - { prot: "tcp", port: "32803" }
+    - { prot: "udp", port: "32769" }
+    - { prot: "tcp", port: "892" }
+    - { prot: "udp", port: "892" }
+    - { prot: "tcp", port: "875" }
+    - { prot: "udp", port: "875" }
+    - { prot: "tcp", port: "662" }
+    - { prot: "udp", port: "662" }
+  when: ansible_distribution_major_version == "6"
+
+- name: IPtables save config
+  shell: "iptables-save > /etc/sysconfig/iptables"
+  when: ansible_distribution_major_version == "6"
+
+- name: NFS services start
+  service: name={{ item }} state=restarted enabled=yes
+  with_items:
+    - "rpcbind"
+    - "nfs"
+  when: ansible_distribution_major_version == "6"
+
+- name: NFS services start
+  service: name={{ item }} state=restarted enabled=yes
+  with_items:
+    - "rpcbind"
+    - "nfs-lock"
+    - "nfs-server"
+  when: ansible_distribution_major_version == "7"

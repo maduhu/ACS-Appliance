@@ -1,0 +1,49 @@
+---
+
+- name: Install MySQL comps
+  yum: name={{ item }} state=present
+  with_items:
+    - MySQL-python
+    - mysql-server
+  when: ansible_distribution_major_version == "6"
+
+- name: replace MySQL my.cnf using template
+  action: template src=mysql-my.cnf.j2 dest=/etc/my.cnf
+  when: ansible_distribution_major_version == "6"
+
+- name: Install MySQL comps
+  yum: name={{ item }} state=present
+  with_items:
+    - MySQL-python
+    - mariadb-server
+  when: ansible_distribution_major_version == "7"
+
+- name: replace MySQL my.cnf using template
+  action: template src=mariadb-my.cnf.j2 dest=/etc/my.cnf
+  when: ansible_distribution_major_version == "7"
+
+- name: Ensure MySQL service is started and set to start on boot
+  service: name=mysqld state=restarted enabled=yes
+  when: ansible_distribution_major_version == "6"
+
+- name: Ensure MySQL service is started and set to start on boot
+  service: name=mariadb state=restarted enabled=yes
+  when: ansible_distribution_major_version == "7"
+
+- name: Open tcp/3306
+  firewalld:
+    service: mysql
+    permanent: true
+    state: enabled
+    immediate: yes
+  when: ansible_distribution_major_version == "7"
+
+- name: Ensure Firewall Rules are in place for MySQL
+  shell: "iptables -I INPUT -p tcp -m tcp --dport 3306 -j ACCEPT"
+  when: ansible_distribution_major_version == "6"
+
+- name: IPtables save config
+  shell: "iptables-save > /etc/sysconfig/iptables"
+  when: ansible_distribution_major_version == "6"
+
+- include: ./secure_mysql.yml

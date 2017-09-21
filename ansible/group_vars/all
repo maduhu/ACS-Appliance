@@ -1,0 +1,70 @@
+---
+
+# Packer setup
+pkr_additions_download: http://download.virtualbox.org/virtualbox/5.1.26/VBoxGuestAdditions_5.1.26.iso
+pkr_local_additions_dir: "/bootcamp-scripts/packer/iso"
+pkr_additions_filename: VBoxGuestAdditions_5.1.26.iso
+
+ssh_retries: 200
+
+# Networking basics
+bc_dnsdomain: ".acs.local"
+
+# Management host
+bc_mgmthost: "ACSAppliance"
+bc_mgmtip: "192.168.56.11"
+bc_mgmtnet: "192.168.56.0/24"
+bc_mgmtmask: "24"
+bc_publicip: "172.30.0.11"
+bc_publicmask: "24"
+c6isourl: "http://mirrors.ukfast.co.uk/sites/ftp.centos.org/6.9/isos/x86_64/CentOS-6.9-x86_64-minimal.iso"
+c7isourl: "http://buildlogs.centos.org/rolling/7/isos/x86_64/CentOS-7-x86_64-Minimal.iso"
+
+# Usernames and passwords
+bc_rootuser: "root"
+bc_rootpwd: "password"
+bc_cloudsqluser: "cloud"
+bc_cloudsqlpass: "cloud"
+kvm_password: "password"
+kvm_username: "root"
+
+# CloudStack
+cs_baseurl: "http://packages.shapeblue.com/cloudstack/upstream/centos/4.10"
+cs_gpgkey: "http://packages.shapeblue.com/release.asc"
+cs_sysvmtemplate: "http://10.2.0.4/shapeblue/systemvmtemplate/4.10/systemvm64template-4.9-kvm.qcow2.bz2"
+cs_browsertitle: "Apache CloudStack 4.10 Appliance"
+cs_centos53x64_template: "http://download.cloud.com/templates/builtin/eec2209b-9875-3c8d-92be-c001bd8a0faf.qcow2.bz2"
+cs_centos53x64_filename: "eec2209b-9875-3c8d-92be-c001bd8a0faf.qcow2.bz2"
+cs_sysvmtemplate_filename: "systemvm64template-4.10-kvm.qcow2.bz2"
+
+# Bootcamp zone config
+env_zonetype: "advanced"
+bc_cmprompt: "SBCM5"
+bc_zonename: "Bootcamp"
+bc_zone_guestcidr: "10.1.1.0/24"
+bc_zone_dns1: "8.8.8.8"
+bc_zone_dns2: "8.8.4.4"
+bc_zone_intdns1: "192.168.56.11"
+bc_zone_intdns2: ""
+bc_zone_physnet: "Physical Network 1"
+bc_local_storage: "false"
+bc_zone_podname: "Pod1"
+bc_pubvlan: ""
+bc_pubgw: "172.30.0.1"
+bc_pubmask: "255.255.255.0"
+bc_pubstartip: "172.30.0.101"
+bc_pubendip: "172.30.0.200"
+bc_podvlans: "100-109"
+bc_podgw: "192.168.56.1"
+bc_podmask: "255.255.255.0"
+bc_podstartip: "192.168.56.201"
+bc_podendip: "192.168.56.209"
+bc_clustername: "CLU1"
+bc_pripool: "PRI1"
+bc_pripath: "/exports/primary"
+bc_secpool: "SEC1"
+bc_secpath: "/exports/secondary"
+
+kvm_mgmt_network_label: "cloudbr-mgmt"
+kvm_guest_network_label: "cloudbr2"
+kvm_public_network_label: "cloudbr2"

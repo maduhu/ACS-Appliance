@@ -1,0 +1,119 @@
+#!/bin/bash
+################################################################################
+# deployzone.sh
+# Populated by Ansible as part of deployvms.yml playbook.
+
+################################################################################
+# Vars / constants
+DEPLOYLOG="/tmp/bootcamp-deployzone.log";
+
+################################################################################
+# Write to log file + console
+function WriteOutput()
+{
+  local LogTimestamp;
+  LogTimestamp=`date +"%Y-%m-%d %H:%M:%S"`;
+  echo -e "$*"
+  echo ${LogTimestamp} "$*" >> ${DEPLOYLOG};
+}
+
+WriteOutput "Checking login.";
+AccountCheck=`cloudmonkey list accounts name=admin | grep -i error`;
+if [ -z ${AccountCheck} ];
+then
+  WriteOutput "Admin account found. Good to go.";
+else
+  WriteOutput "Unable to log in, please check CloudStack installation.";
+  exit 1;
+fi
+
+WriteOutput "Checking if zone exists."
+ZoneCheck=`cloudmonkey list zones`;
+if [ -z ${ZoneCheck} ];
+then
+  WriteOutput "No zone exists. Good to go."
+else
+  WriteOutput "Zone already present, bailing out."
+  exit 1
+fi
+
+WriteOutput "Creating advanced zone - {{ bc_zonename }}";
+ZoneID=`cloudmonkey create zone networktype=Advanced securitygroupenabled=false guestcidraddress={{ bc_zone_guestcidr }} name={{ bc_zonename }} dns1={{ bc_zone_dns1 }} dns2={{ bc_zone_dns2 }} internaldns1={{ bc_zone_intdns1 }} internaldns2={{ bc_zone_intdns2 }} localstorageenabled={{ bc_local_storage }} | jq -c -r '.zone.id'`;
+WriteOutput "Zone created with ID ${ZoneID}.";
+WriteOutput "Creating physical network";
+cloudmonkey create physicalnetwork zoneid=${ZoneID} name='{{ bc_zone_physnet }}' isolationmethods='VLAN' | tee -i -a ${DEPLOYLOG};
+PhysNetMgmtID=`cloudmonkey list physicalnetworks name="{{ bc_zone_physnet }}" | jq '.physicalnetwork[] | .id'`;
+PhysNetPubID=`cloudmonkey list physicalnetworks name="{{ bc_zone_physnet }}" | jq '.physicalnetwork[] | .id'`;
+PhysNetGuestID=`cloudmonkey list physicalnetworks name="{{ bc_zone_physnet }}" | jq '.physicalnetwork[] | .id'`;
+WriteOutput "Physical network - Management created with ID = ${PhysNetMgmtID}";
+WriteOutput "Physical network - Public created with ID = ${PhysNetPubID}";
+WriteOutput "Physical network - Guest created with ID = ${PhysNetGuestID}";
+WriteOutput "Adding Traffic Type - Public (Advanced Network).";
+cloudmonkey add traffictype physicalnetworkid=${PhysNetPubID} traffictype='Public' kvmnetworklabel='{{ kvm_public_network_label }}' | tee -i -a ${DEPLOYLOG};
+WriteOutput "Adding Traffic Type - Guest (Advanced Network)";
+cloudmonkey add traffictype physicalnetworkid=${PhysNetGuestID} traffictype='Guest' kvmnetworklabel='{{ kvm_guest_network_label }}' | tee -i -a ${DEPLOYLOG};
+WriteOutput "Adding Traffic Type - Management";
+cloudmonkey add traffictype physicalnetworkid=${PhysNetMgmtID} traffictype='Management' kvmnetworklabel='{{ kvm_mgmt_network_label }}' | tee -i -a ${DEPLOYLOG};
+PhysNetArray=`cloudmonkey list physicalnetworks filter=id | jq '.physicalnetwork[] | .id'`;
+for i in ${PhysNetArray};
+do
+  WriteOutput "Enabling Physical Network ${i}";
+  cloudmonkey update physicalnetwork state='Enabled' id=${i}  | tee -i -a ${DEPLOYLOG};
+done
+NetProvArrayAdv=`cloudmonkey list networkserviceproviders filter=name,id | jq '.networkserviceprovider[] | select(.name!="SecurityGroupProvider") | .id' | tr " " "\n"`;
+IntLBArrayAdv=`cloudmonkey list internalloadbalancerelements filter=name,id | jq '.internalloadbalancerelement[] | .id' | tr " " "\n"`;
+VRArrayAdv=`cloudmonkey list virtualrouterelements filter=name,id | jq '.virtualrouterelement[] | .id' | tr " " "\n"`;
+for i in ${IntLBArrayAdv};
+do
+  WriteOutput "Enabling internalloadbalancerelements ${i}";
+  cloudmonkey configure internalloadbalancerelement enabled='true' id=${i} | tee -i -a ${DEPLOYLOG};
+done
+for i in ${VRArrayAdv};
+do
+  WriteOutput "Enabling virtualrouterelement ${i}";
+  cloudmonkey configure virtualrouterelement enabled='true' id=${i} | tee -i -a ${DEPLOYLOG};
+done
+for i in ${NetProvArrayAdv};
+do
+  WriteOutput "Enabling networkserviceprovider ${i}";
+  cloudmonkey update networkserviceprovider state='Enabled' id=${i} | tee -i -a ${DEPLOYLOG};
+done
+
+WriteOutput "Creating public range.";
+cloudmonkey create vlaniprange zoneid=${ZoneID} vlan="{{ bc_pubvlan }}" gateway="{{ bc_pubgw }}" netmask="{{ bc_pubmask }}" startip="{{ bc_pubstartip }}" endip="{{ bc_pubendip }}" forvirtualnetwork="true" | tee -i -a ${DEPLOYLOG};
+WriteOutput "Creating Guest VLAN range."
+cloudmonkey update physicalnetwork id=${PhysNetGuestID} vlan="{{ bc_podvlans }}" | tee -i -a ${DEPLOYLOG};
+
+WriteOutput "Creating 1st Pod.";
+cloudmonkey create pod zoneid=${ZoneID} name="{{ bc_zone_podname }}" gateway="{{ bc_podgw }}" netmask="{{ bc_podmask }}" startip="{{ bc_podstartip }}" endip="{{ bc_podendip }}" | tee -i -a ${DEPLOYLOG};
+PodID=`cloudmonkey list pods name={{ bc_zone_podname }} filter=id | jq '.pod[] | .id'`;
+WriteOutput "First Pod created with ID = ${PodID}";
+
+WriteOutput "Adding cluster for KVM."
+ClusterID_KVM=`cloudmonkey add cluster zoneid=${ZoneID} hypervisor='KVM' clustertype='CloudManaged' podid=${PodID} clustername="p1-c$NEXTCLUSTER"  | jq '.cluster[] | .id'`;
+
+WriteOutput "Adding KVM hosts."
+cloudmonkey add host zoneid=${ZoneID} podid=${PodID} clusterid=${ClusterID_KVM} hypervisor='KVM' password="{{ kvm_password }}" username="{{ kvm_username }}" url="http://{{ bc_mgmtip }}" | tee -i -a ${DEPLOYLOG};
+sleep 10;
+  HOST_STATES="DOWN"
+  while [[ "$HOST_STATES" == "DOWN" ]]; do
+    HOST_CHECK=`cloudmonkey list hosts type=routing | grep '"state":' | grep -i 'alert|disconnected|connecting|down'`
+    if [[ -z $HOST_CHECK ]];
+    then
+      HOST_STATES="ALL UP";
+    else
+      WriteOutput "Not all hosts reported Up. Checking again in 10 seconds.";
+      sleep 10;
+    fi
+  done
+WriteOutput "All hosts reported Up. Continuing";
+
+WriteOutput "Adding Primary Storage pool.";
+cloudmonkey create storagepool zoneid=${ZoneID} podid=${PodID} clusterid=${ClusterID_KVM} name='{{ bc_pripool }}' scope='cluster' url="SharedMountPoint://localhost{{ bc_pripath }}" | tee -i -a ${DEPLOYLOG};
+
+WriteOutput "Adding Secondary Storage Pool"
+cloudmonkey add imagestore name='{{ bc_secpool }}' provider='NFS' zoneid=${ZoneID} url="NFS://{{ bc_mgmtip }}{{ bc_secpath }}" | tee -i -a ${DEPLOYLOG};
+
+WriteOutput "Enabling zone."
+cloudmonkey update zone allocationstate='Enabled' id=${ZoneID} | tee -i -a ${DEPLOYLOG};
+WriteOutput "You're done. Good luck!";

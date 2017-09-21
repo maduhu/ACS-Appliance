@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<installation srtype="ext">
+	<primary-disk>sda</primary-disk>
+	<keymap>uk</keymap>
+	<root-password>password</root-password>
+	<source type="local"/>
+	<admin-interface name="eth0" proto="dhcp" />
+	<timezone>Etc/UTC</timezone>
+	<hostname>xenserver65sp1</hostname>
+	<time-config-method>ntp</time-config-method>
+	<ntp-server>0.uk.pool.ntp.org</ntp-server>
+	<ntp-server>1.uk.pool.ntp.org</ntp-server>
+	<ntp-server>2.uk.pool.ntp.org</ntp-server>
+</installation>

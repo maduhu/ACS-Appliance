@@ -1,0 +1,39 @@
+---
+
+- name: Ensure EPEL is available (centOS6)
+  yum: name=http://www.mirrorservice.org/sites/dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm state=present
+
+- name: Install python-pip / vim / tree / ntp / wget
+  yum: name={{ item }} state=present
+  with_items:
+    - python-pip
+    - vim
+    - tree
+    - ntp
+    - wget
+    - bridge-utils
+    - libselinux-python
+
+- name: upgrade all packages
+  yum: name=* state=latest
+
+- name: Configure NTP
+  service: name=ntpd enabled=yes state=started
+
+- name: No DNS for ssh
+  lineinfile: dest=/etc/ssh/sshd_config line="UseDNS no"
+
+- name: Note packer build time
+  shell: date > /etc/packer_box_build_time
+
+- name: Environment notification
+  lineinfile: dest=/etc/motd line="\nShapeBlue CentOS6 CloudStack management server, built with Packer.\n"
+
+- name: C6 networking
+  include: ./kvm_networking.yml
+  when: ansible_distribution_major_version == "6"
+
+#- name: update sysctl to allow iprouting
+#  shell: sed -i 's/net.ipv4.ip_forward.*/net.ipv4.ip_forward = 1/' /etc/sysctl.conf && echo "net.ipv4.conf.eth0.proxy_arp=1" >> /etc/sysctl.conf && sysctl -p /etc/sysctl.conf
+
+
