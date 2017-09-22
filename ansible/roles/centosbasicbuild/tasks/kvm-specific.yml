@@ -1,0 +1,31 @@
+---
+
+- name: Install centos-release-xen
+  yum: name=centos-release-xen state=present
+  tags:
+    - kvm-nesting
+
+- name: Disable Repo for safety
+  command: sed -i "s/enabled=1/enabled=0/g" /etc/yum.repos.d/CentOS-Xen.repo
+  tags:
+    - kvm-nesting
+
+- name: Update to kernel to nestable version
+  yum: name=centos-release-xen state=latest enablerepo=
+  tags:
+    - kvm-nesting
+
+- name: Enable nested pt I
+  command: echo 'options kvm_intel nested=1' >> /etc/modprobe.d/qemu-system-x86.conf
+  tags:
+    - kvm-nesting
+
+- name: Enable nested pt II
+  command: echo 'options kvm-intel nested=1' >> /etc/modprobe.d/kvm-intel.conf
+  tags:
+    - kvm-nesting
+
+#- name: Enable nested pt III (update Grub)
+#  lineinfile: regex=.*sds.* line=".* kvm-intel.nested=1" path=/boot/grub/grub.conf state=present backrefs=yes
+#  tags:
+#    - kvm-nesting

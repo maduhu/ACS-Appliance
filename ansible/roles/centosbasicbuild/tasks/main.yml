@@ -33,7 +33,25 @@
   include: ./kvm_networking.yml
   when: ansible_distribution_major_version == "6"
 
-#- name: update sysctl to allow iprouting
-#  shell: sed -i 's/net.ipv4.ip_forward.*/net.ipv4.ip_forward = 1/' /etc/sysctl.conf && echo "net.ipv4.conf.eth0.proxy_arp=1" >> /etc/sysctl.conf && sysctl -p /etc/sysctl.conf
+
+- name: Environment notification
+  lineinfile: dest=/etc/motd line="\nApache CloudStack Demo Appliance, built with Packer.\n"
+
+- name: C6 networking
+  include: ./kvm_networking.yml
+  when: ansible_distribution_major_version == "6"
 
 
+- name: Additional Hypervisor Specific Configuration (KVM) 
+  include: ./kvm-specific.yml
+  when: packer_build_name == "kvm"
+
+
+- name: Additional Hypervisor Specific Configuration (XenServer) 
+  include: ./xenserver-specificyml
+  when: packer_build_name == "xen"
+
+
+- name: Additional Hypervisor Specific Configuration (vSphere) 
+  include: ./vsphere-specific.yml
+  when: packer_build_name == "vmware"
