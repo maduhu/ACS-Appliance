@@ -7,6 +7,12 @@
 # Vars / constants
 DEPLOYLOG="/tmp/bootcamp-deployzone.log";
 
+PUBGW="{{ bc_pubgw }}"
+PUBMASK="{{ bc_pubmask }}"
+PUBSTART="{{ bc_pubstartip }}"
+PUBEND="{{ bc_pubendip }}"
+DNS1="{{ bc_zone_dns1 }}"
+INTERNALDNS1="{{ internaldns1 }}"
 ################################################################################
 # Write to log file + console
 function WriteOutput()
@@ -38,7 +44,7 @@ else
 fi
 
 WriteOutput "Creating advanced zone - {{ bc_zonename }}";
-ZoneID=`cloudmonkey create zone networktype=Advanced securitygroupenabled=false guestcidraddress={{ bc_zone_guestcidr }} name={{ bc_zonename }} dns1={{ bc_zone_dns1 }} dns2={{ bc_zone_dns2 }} internaldns1={{ bc_zone_intdns1 }} internaldns2={{ bc_zone_intdns2 }} localstorageenabled={{ bc_local_storage }} | jq -c -r '.zone.id'`;
+ZoneID=`cloudmonkey create zone networktype=Advanced securitygroupenabled=false guestcidraddress={{ bc_zone_guestcidr }} name={{ bc_zonename }} dns1=$(DNS1) dns2={{ bc_zone_dns2 }} internaldns1=$(INTERNALDNS1) internaldns2={{ bc_zone_intdns2 }} localstorageenabled={{ bc_local_storage }} | jq -c -r '.zone.id'`;
 WriteOutput "Zone created with ID ${ZoneID}.";
 WriteOutput "Creating physical network";
 cloudmonkey create physicalnetwork zoneid=${ZoneID} name='{{ bc_zone_physnet }}' isolationmethods='VLAN' | tee -i -a ${DEPLOYLOG};
@@ -80,7 +86,7 @@ do
 done
 
 WriteOutput "Creating public range.";
-cloudmonkey create vlaniprange zoneid=${ZoneID} vlan="{{ bc_pubvlan }}" gateway="{{ bc_pubgw }}" netmask="{{ bc_pubmask }}" startip="{{ bc_pubstartip }}" endip="{{ bc_pubendip }}" forvirtualnetwork="true" | tee -i -a ${DEPLOYLOG};
+cloudmonkey create vlaniprange zoneid=${ZoneID} vlan="{{ bc_pubvlan }}" gateway="$(PUBGW)" netmask="$(PUBMASK)" startip="$(PUBSTART)" endip="$(PUBEND)" forvirtualnetwork="true" | tee -i -a ${DEPLOYLOG};
 WriteOutput "Creating Guest VLAN range."
 cloudmonkey update physicalnetwork id=${PhysNetGuestID} vlan="{{ bc_podvlans }}" | tee -i -a ${DEPLOYLOG};
 

@@ -84,7 +84,10 @@
 
 
 - name: Copy Cloudmonkey zone create script to mgmt server
-  template: src="deployzone.sh.j2" dest="/tmp/deployzone.sh" mode=0744
+  template: src="deploy_adv_zone.sh.j2" dest="/tmp/deploy_adv_zone.sh" mode=0744
+
+- name: Copy Cloudmonkey zone create script to mgmt server
+  template: src="deploy_basic_zone.sh.j2" dest="/tmp/deploy_basic_zone.sh" mode=0744
 
 - name: "wait for ACS Management Service to come up"
   shell: "curl http://127.0.0.1:8080/client/api --connect-timeout 5"
