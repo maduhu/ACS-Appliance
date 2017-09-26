@@ -1,7 +1,0 @@
----
-
-- name: Report download
-  debug: msg="Downloading {{ iso }} if not present."
-
-- name: Download if iso not present
-  get_url: url={{ iso }} dest=../iso/ force=no

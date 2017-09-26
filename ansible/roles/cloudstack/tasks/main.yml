@@ -35,11 +35,12 @@
 - name: Local copy of system VM template to NGINX folder
   copy: src={{ item }} dest=/usr/share/nginx/html/ mode=0755
   with_fileglob:
-    - ../../../../iso/{{ cs_sysvmtemplate_filename }}
     - ../../../../iso/{{ cs_centos53x64_filename }}
 
+#    - ../../../../iso/{{ cs_sysvmtemplate_filename }}
+
 - name: Seed system VM template
-  shell: /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m /exports/secondary -u {{ bc_mgmtip }}/{{ cs_sysvmtemplate_filename }} -h kvm -F
+  shell: /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt -m /exports/secondary -u {{ cs_sysvmtemplate }} -h kvm -F
 
 - name: Update DB with CentOS template URL
   shell: mysql -u {{ bc_rootuser }} -p{{ bc_rootpwd }} -e \ "UPDATE cloud.vm_template SET url='{{ bc_mgmtip }}/{{ cs_sysvmtemplate_filename }}' WHERE id=4;"
@@ -83,10 +84,10 @@
     - "UPDATE cloud.service_offering SET ram_size='128', speed='128' WHERE vm_type='consoleproxy';"
 
 
-- name: Copy Cloudmonkey zone create script to mgmt server
+- name: Copy Cloudmonkey Advanced zone creation script to mgmt server
   template: src="deploy_adv_zone.sh.j2" dest="/tmp/deploy_adv_zone.sh" mode=0744
 
-- name: Copy Cloudmonkey zone create script to mgmt server
+- name: Copy Cloudmonkey Basic zone creation script to mgmt server
   template: src="deploy_basic_zone.sh.j2" dest="/tmp/deploy_basic_zone.sh" mode=0744
 
 - name: "wait for ACS Management Service to come up"

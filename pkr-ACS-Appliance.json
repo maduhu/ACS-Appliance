@@ -6,6 +6,7 @@
     "buildvmname": "ACS410mgmt",
     "vmmem": "4096",
     "vmvcpus": "2",
+    "http_directory": "scripts",
     "sshpass":"password"
   },
   "builders": [
@@ -113,5 +114,21 @@
   	  "playbook_file": "ansible/anscentosmgmt.yml",
       "user": "root"
     }
+  ],
+  "post-processors":[
+      {
+        "type": "shell-local",
+        "only": ["vmware"],
+        "inline": [
+          "ovftool --compress=6 output/vmware/{{user `buildvmname`}}.vmx output/{{user `buildvmname`}}.ovf","rm -f output/vmware/*"
+        ]
+      },
+            {
+        "type": "shell-local",
+        "only": ["kvm"],
+        "inline": [
+          "mv output/kvm/{{user `buildvmname`}} output/{{user `buildvmname`}}.qcow2"
+        ]
+      }
   ]
 }

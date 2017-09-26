@@ -1,5 +1,0 @@
-- name: Just fetch all binaries from brickftp etc
-  hosts: localhost
-  gather_facts: no
-  roles:
-    - fetchbinaries

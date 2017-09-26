@@ -1,0 +1,7 @@
+---
+
+- name: Install build host pre-reqs
+  hosts: localhost
+  gather_facts: no
+  roles:
+    - buildhost
