@@ -9,10 +9,23 @@
   - {{ workstation_bundle }}
   - {{ vix_bundle }}
 
+#http://packages.shapeblue.com.s3-eu-west-1.amazonaws.com/systemvmtemplate/vhd-util
+#http://packages.shapeblue.com.s3-eu-west-1.amazonaws.com/systemvmtemplate/libvhd.so.1.0
+
 - name: Install packer
   copy: src="../iso/packer" dest="/usr/bin/packer" mode=0777
 
 - name: install workstation
   shell: "../iso/base({{ workstation_bundle }})"
 
-  
+-# instaal qemu-kvm qemu-utils 
+
+#mkdir /vhd
+#cd /vhd
+#git clone https://github.com/rubiojr/vhd-util-convert/
+#cd vhd-util-convert/
+#ls
+#make
+#ls
+#./vhd-util
+#cp vhd-util /usr/bin/

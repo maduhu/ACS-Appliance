@@ -49,7 +49,7 @@
 
 - name: Additional Hypervisor Specific Configuration (XenServer) 
   include: ./xenserver-specific.yml
-  when: packer_build_name == "xen"
+  when: packer_build_name == "xenserver"
 
 
 - name: Additional Hypervisor Specific Configuration (vSphere) 
