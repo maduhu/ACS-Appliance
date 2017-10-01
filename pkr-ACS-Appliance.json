@@ -3,7 +3,7 @@
 	"_comment": "This builds an Apache CloudStack Appliance.",
 	"variables": {
 		"build_version": "0.0.1",
-		"buildvmname": "ACS410mgmt",
+		"buildvmname": "ACS-Appliance_410",
 		"vmmem": "4096",
 		"vmvcpus": "2",
 		"http_directory": "scripts",
@@ -38,7 +38,7 @@
 			"<tab> text ks=floppy:/centos-kickstart-6.7.cfg<enter><wait>"
 		],
 		"boot_wait": "10s",
-		"output_directory": "output/vmware",
+		"output_directory": "/data/packer/vmware",
 		"disk_size": 40520,
 		"format": "ova",
 		"ssh_username": "root",
@@ -56,11 +56,11 @@
 		"floppy_files": [
 			"scripts/centos-kickstart-6.7.cfg"
 		],
-		"output_directory": "output/kvm",
+		"output_directory": "/data/packer/kvm",
 		"shutdown_command": "shutdown -P now",
 		"disk_size": 40520,
 		"format": "qcow2",
-		"headless": "true",
+		"headless": "false",
 		"accelerator": "kvm",
 		"disk_compression": "true",
 		"ssh_host_port_min": 2222,
@@ -85,13 +85,13 @@
 		"floppy_files": [
 			"scripts/centos-kickstart-6.7.cfg"
 		],
-		"output_directory": "output/xenserver",
+		"output_directory": "/data/packer/xenserver",
 		"shutdown_command": "shutdown -P now",
 		"disk_size": 40520,
 		"format": "raw",
-		"headless": "true",
-		"disk_compression": "true",
+		"headless": "false",
 		"accelerator": "kvm",
+		"disk_compression": "true",
 		"ssh_host_port_min": 2222,
 		"ssh_host_port_max": 2229,
 		"ssh_username": "root",
@@ -115,23 +115,24 @@
 			"type": "shell-local",
 			"only": ["vmware"],
 			"inline": [
-				"ovftool --compress=6 output/vmware/{{user `buildvmname`}}.vmx ~/Documents/{{user `buildvmname`}}.ova", "rm -f output/vmware/*"
+				"ovftool --compress=6 /data/packer/vmware/{{user `buildvmname`}}.vmx output/{{user `buildvmname`}}.ova", "rm -f /data/packer/vmware/*"
 			]
 		},
 		{
 			"type": "shell-local",
 			"only": ["kvm"],
 			"inline": [
-				"mv output/kvm/{{user `buildvmname`}} ~/Documents/{{user `buildvmname`}}.qcow2"
+				"mv /data/packer/kvm/{{user `buildvmname`}} output/{{user `buildvmname`}}.qcow2"
 			]
-		}, {
+		},
+		{
 			"type": "shell-local",
 			"only": ["xenserver"],
 			"inline": [
-				"vhd-util convert -s 0 -t 1 -i output/xenserver/{{user `buildvmname`}} -o output/xenserver/stagefixed.vhd",
-				"faketime '2010-01-01' vhd-util convert -s 1 -t 2 -i output/xenserver/stagefixed.vhd -o /home/shapeblue/Documents/{{user `buildvmname`}}.vhd",
-				"rm -f output/xenserver/*",
-				"bzip2 /home/shapeblue/Documents/{{user `buildvmname`}}.vhd"
+			"vhd-util convert -s 0 -t 1 -i img.raw -o stagefixed.vhd",
+			"faketime '2010-01-01' vhd-util convert -s 1 -t 2 -i stagefixed.vhd -o /data/packer/xenserver/{{user `buildvmname`}}.vhd",
+			"bzip2 /data/packer/xenserver/{{user `buildvmname`}}.vhd",
+				"mv /data/packer/xenserver/{{user `buildvmname`}}.vhd.bzip2 output/{{user `buildvmname`}}.vhs.bzip2"
 			]
 		}
 	]
