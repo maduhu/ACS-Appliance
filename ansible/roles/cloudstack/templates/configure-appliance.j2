@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#Configure Bridged Interface
+
+read -p  "  Choose Mode 1-Advanced Networking 2-Basic Networking [1,2] " APPLICANCENETWORKING
+read -p  "  Choose Mode 1-Fully Isolated 2-External Acccess [1,2] " APPLICANCEMODE
+
+if [[ "$APPLICANCEMODE" = "2" ]]; then
+  read -p  "  Enter Start IP: " LINKSTARTIP
+  read -p  "  Enter End IP: " LINKENDIP
+  read -p  "  Enter Netmask: " LINKNETMASK
+  read -p  "  Enter Gateway: " LINKGATEWAY
+fi
+read -p  "  Enter DNS: " LINKDNS
+
+sed -i -e '/^PUBGW=/ c\PUBGW=$LINKGATEWAY' -e '/^PUBMASK=/ c\PUBMASK=$LINKNETMASK' -e '/^PUBSTART=/ c\PUBSTART=$LINKSTARTIP' -e  '/^PUBEND=/ c\PUBEND=$LINKENDIP' -e '/^DNS1=/ c\DNS1=$LINKDNS' -e '/^INTERNALDNS1=/ c\INTERNALDNS1=$LINKDNS' /etc/sysconfig/nfs
+
