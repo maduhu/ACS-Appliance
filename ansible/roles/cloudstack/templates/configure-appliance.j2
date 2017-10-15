@@ -2,8 +2,20 @@
 
 #Configure Bridged Interface
 
+read -p  "  Use DHCP on UI Interface [y/n]" USEDHCP
 read -p  "  Choose Mode 1-Advanced Networking 2-Basic Networking [1,2] " APPLICANCENETWORKING
 read -p  "  Choose Mode 1-Fully Isolated 2-External Acccess [1,2] " APPLICANCEMODE
+
+if [[ "$USEDHCP" = "n" ]; then
+  read -p  "  IP Address: " UIIPADDR
+  read -p  "  Netmask: " UINETMASK
+  read -p  "  Gateway: " UIGATEWAY
+sed -i '/^BOOTPROTO=dhcp c\BOOTPROTO=none' /etc/sysconfig/network-scripts/ifcfg-eth1
+echo "IPADDR=$UIIPADDR
+NETMASK=$UINETMASK
+GATEWAY=$UIGATEWAY
+">/etc/sysconfig/network-scripts/ifcfg-eth1
+fi 
 
 if [[ "$APPLICANCEMODE" = "2" ]]; then
   read -p  "  Enter Start IP: " LINKSTARTIP
@@ -12,6 +24,15 @@ if [[ "$APPLICANCEMODE" = "2" ]]; then
   read -p  "  Enter Gateway: " LINKGATEWAY
 fi
 read -p  "  Enter DNS: " LINKDNS
+read -p  "  Use this DNS for UI: [y/n]" UIDNS
+if [[ "$UIDNS" = "y" ]]; then
+  echo "namserver $LINKDNS" > /etc/resolv.conf
+fi
 
-sed -i -e '/^PUBGW=/ c\PUBGW=$LINKGATEWAY' -e '/^PUBMASK=/ c\PUBMASK=$LINKNETMASK' -e '/^PUBSTART=/ c\PUBSTART=$LINKSTARTIP' -e  '/^PUBEND=/ c\PUBEND=$LINKENDIP' -e '/^DNS1=/ c\DNS1=$LINKDNS' -e '/^INTERNALDNS1=/ c\INTERNALDNS1=$LINKDNS' /etc/sysconfig/nfs
+echo "/n  Configuring Zone scripts/n"
+
+
+sed -i -e '/^PUBGW=/ c\PUBGW=$LINKGATEWAY' -e '/^PUBMASK=/ c\PUBMASK=$LINKNETMASK' -e '/^PUBSTART=/ c\PUBSTART=$LINKSTARTIP' -e  '/^PUBEND=/ c\PUBEND=$LINKENDIP' -e '/^DNS1=/ c\DNS1=$LINKDNS' -e '/^INTERNALDNS1=/ c\INTERNALDNS1=$LINKDNS' /tmp/deploy_adv_zone.sh
+
+sed -i -e '/^PUBGW=/ c\PUBGW=$LINKGATEWAY' -e '/^PUBMASK=/ c\PUBMASK=$LINKNETMASK' -e '/^PUBSTART=/ c\PUBSTART=$LINKSTARTIP' -e  '/^PUBEND=/ c\PUBEND=$LINKENDIP' -e '/^DNS1=/ c\DNS1=$LINKDNS' -e '/^INTERNALDNS1=/ c\INTERNALDNS1=$LINKDNS' /tmp/deploy_basic_zone.sh
 
