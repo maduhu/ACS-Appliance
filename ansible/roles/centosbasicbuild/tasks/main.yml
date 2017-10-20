@@ -26,13 +26,9 @@
 - name: Note packer build time
   shell: date > /etc/packer_box_build_time
 
-- name: Environment notification
-  lineinfile: dest=/etc/motd line="\nShapeBlue CentOS6 CloudStack management server, built with Packer.\n"
-
 - name: C6 networking
   include: ./kvm_networking.yml
   when: ansible_distribution_major_version == "6"
-
 
 - name: Environment notification
   lineinfile: dest=/etc/motd line="\nApache CloudStack Demo Appliance, built with Packer.\n"
@@ -41,6 +37,11 @@
   include: ./kvm_networking.yml
   when: ansible_distribution_major_version == "6"
 
+- name: Copy configurator script to /usr/bin
+  template:
+    src: configure-appliance.j2
+    dest: /usr/bin/configure-appliance
+    mode: 0700
 
 - name: Additional Hypervisor Specific Configuration (KVM) 
   include: ./kvm-specific.yml

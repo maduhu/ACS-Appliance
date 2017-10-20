@@ -60,7 +60,7 @@
 		"shutdown_command": "shutdown -P now",
 		"disk_size": 40520,
 		"format": "qcow2",
-		"headless": "false",
+		"headless": "true",
 		"accelerator": "kvm",
 		"disk_compression": "true",
 		"ssh_host_port_min": 2222,
@@ -89,9 +89,8 @@
 		"shutdown_command": "shutdown -P now",
 		"disk_size": 40520,
 		"format": "raw",
-		"headless": "false",
+		"headless": "true",
 		"accelerator": "kvm",
-		"disk_compression": "true",
 		"ssh_host_port_min": 2222,
 		"ssh_host_port_max": 2229,
 		"ssh_username": "root",
@@ -115,7 +114,7 @@
 			"type": "shell-local",
 			"only": ["vmware"],
 			"inline": [
-				"ovftool --compress=6 /data/packer/vmware/{{user `buildvmname`}}.vmx output/{{user `buildvmname`}}.ova", "rm -f /data/packer/vmware/*"
+				"ovftool /data/packer/vmware/{{user `buildvmname`}}.vmx output/{{user `buildvmname`}}-esxi.ova", "rm -f /data/packer/vmware/*"
 			]
 		},
 		{
@@ -129,10 +128,11 @@
 			"type": "shell-local",
 			"only": ["xenserver"],
 			"inline": [
-			"vhd-util convert -s 0 -t 1 -i img.raw -o stagefixed.vhd",
-			"faketime '2010-01-01' vhd-util convert -s 1 -t 2 -i stagefixed.vhd -o /data/packer/xenserver/{{user `buildvmname`}}.vhd",
-			"bzip2 /data/packer/xenserver/{{user `buildvmname`}}.vhd",
-				"mv /data/packer/xenserver/{{user `buildvmname`}}.vhd.bzip2 output/{{user `buildvmname`}}.vhs.bzip2"
+			"vhd-util convert -s 0 -t 1 -i /data/packer/xenserver/{{user `buildvmname`}} -o /data/packer/xenserver/stagefixed.vhd || true",
+			"faketime '2010-01-01' qemu-img convert -S 512 -O vpc -o subformat=dynamic /data/packer/xenserver/stagefixed.vhd /data/packer/xenserver/{{user `buildvmname`}}.vhd || true",
+			"cp scripts/ACSAppliance-410-xs-template.ovf /data/packer/xenserver/{{user `buildvmname`}}.ovf || true",
+			"tar -cf /data/packer/xenserver/{{user `buildvmname`}}-xs.ova -C /data/packer/xenserver/ {{user `buildvmname`}}.vhd {{user `buildvmname`}}.ovf || true",
+			"pigz -k /data/packer/xenserver/{{user `buildvmname`}}-xs.ova || true"
 			]
 		}
 	]

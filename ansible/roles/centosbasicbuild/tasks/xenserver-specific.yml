@@ -1,1 +1,15 @@
 ---
+
+- name: Copy Xen Tools to VM
+  copy:
+    src: "{{ item }}"
+    dest: /tmp
+  with_fileglob:
+    - xe-guest-utilities*
+
+- name: Install Xen Tools
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_fileglob:
+    - /tmp/xe-guest-utilities*

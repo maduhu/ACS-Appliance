@@ -29,3 +29,8 @@
 #ls
 #./vhd-util
 #cp vhd-util /usr/bin/
+
+XS Xentools
+
+https://github.com/xenserver/xe-guest-utilities/releases/download/v6.6.80/xe-guest-utilities-6.6.80-17.x86_64.rpm
+https://github.com/xenserver/xe-guest-utilities/releases/download/v6.6.80/xe-guest-utilities-xenstore-6.6.80-17.x86_64.rpm
