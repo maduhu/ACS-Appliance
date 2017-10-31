@@ -8,8 +8,10 @@
     - xe-guest-utilities*
 
 - name: Install Xen Tools
-  yum:
-    name: "{{ item }}"
-    state: present
-  with_fileglob:
-    - /tmp/xe-guest-utilities*
+  command: rpm -ivh /tmp/xe-guest-utilities*
+
+- name: Install Xen Tools
+  file:
+    state: absent
+    path: /tmp/xe-guest-utilities
+

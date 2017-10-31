@@ -46,7 +46,29 @@
 		"ssh_port": 22,
 		"ssh_wait_timeout": "1000s",
 		"shutdown_command": "sudo -S shutdown -P now",
-		"shutdown_timeout": "2m"
+		"shutdown_timeout": "2m",
+		"vmx_data_post": {
+			"memsize": "{{user `vmmem`}}",
+			"numvcpus": "{{user `vmvcpus`}}",
+			"virtualHW.productCompatibility": "hosted",
+			"vhv.enable": "TRUE",
+			"ethernet0.networkName": "{{ user `packer_remote_network` }}",
+			"ethernet0.present": "TRUE",
+			"ethernet0.startConnected": "TRUE",
+			"ethernet0.virtualDev": "e1000",
+			"ethernet0.addressType": "generated",
+			"ethernet0.generatedAddressOffset": "0",
+			"ethernet0.wakeOnPcktRcv": "FALSE",
+			"ethernet1.networkName": "{{ user `packer_remote_network` }}",
+			"ethernet1.present": "TRUE",
+			"ethernet1.startConnected": "TRUE",
+			"ethernet1.virtualDev": "e1000",
+			"ethernet1.addressType": "generated",
+			"ethernet1.generatedAddressOffset": "0",
+			"ethernet1.wakeOnPcktRcv": "FALSE",
+			"vpmc.enable": "TRUE",
+			"featMask.vm.hv.capable": "Min:1"
+			}
 	}, {
 		"name": "kvm",
 		"type": "qemu",
@@ -113,9 +135,7 @@
 	"post-processors": [{
 			"type": "shell-local",
 			"only": ["vmware"],
-			"inline": [
-				"ovftool /data/packer/vmware/{{user `buildvmname`}}.vmx output/{{user `buildvmname`}}-esxi.ova", "rm -f /data/packer/vmware/*"
-			]
+			"inline": ["sh scripts/packageOVA.sh {{user `buildvmname`}}"]
 		},
 		{
 			"type": "shell-local",
@@ -132,7 +152,9 @@
 			"faketime '2010-01-01' qemu-img convert -S 512 -O vpc -o subformat=dynamic /data/packer/xenserver/stagefixed.vhd /data/packer/xenserver/{{user `buildvmname`}}.vhd || true",
 			"cp scripts/ACSAppliance-410-xs-template.ovf /data/packer/xenserver/{{user `buildvmname`}}.ovf || true",
 			"tar -cf /data/packer/xenserver/{{user `buildvmname`}}-xs.ova -C /data/packer/xenserver/ {{user `buildvmname`}}.vhd {{user `buildvmname`}}.ovf || true",
-			"pigz -k /data/packer/xenserver/{{user `buildvmname`}}-xs.ova || true"
+			"pigz -k /data/packer/xenserver/{{user `buildvmname`}}-xs.ova || true",
+			"mv /data/packer/xenserver/{{user `buildvmname`}}-xs.ova output/{{user `buildvmname`}}-xs.ova",
+			"rm -rf /data/packer/xenserver"
 			]
 		}
 	]
