@@ -29,7 +29,6 @@
 #make
 #ls
 #./vhd-util
-<<<<<<< HEAD
 #cp vhd-util /usr/bin/
 
 XS Xentools
@@ -38,4 +37,4 @@ https://github.com/xenserver/xe-guest-utilities/releases/download/v6.6.80/xe-gue
 https://github.com/xenserver/xe-guest-utilities/releases/download/v6.6.80/xe-guest-utilities-xenstore-6.6.80-17.x86_64.rpm
 =======
 #cp vhd-util /usr/bin
->>>>>>> update to overall build
+
