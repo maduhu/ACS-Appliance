@@ -9,8 +9,9 @@
   - {{ workstation_bundle }}
   - {{ vix_bundle }}
 
+#packer --> /usr/bin
 #http://packages.shapeblue.com.s3-eu-west-1.amazonaws.com/systemvmtemplate/vhd-util
-#http://packages.shapeblue.com.s3-eu-west-1.amazonaws.com/systemvmtemplate/libvhd.so.1.0
+#http://packages.shapeblue.com.s3-eu-west-1.amazonaws.com/systemvmtemplate/libvhd.so.1.0  -->  /usr/lib/
 
 - name: Install packer
   copy: src="../iso/packer" dest="/usr/bin/packer" mode=0777
@@ -28,9 +29,13 @@
 #make
 #ls
 #./vhd-util
+<<<<<<< HEAD
 #cp vhd-util /usr/bin/
 
 XS Xentools
 
 https://github.com/xenserver/xe-guest-utilities/releases/download/v6.6.80/xe-guest-utilities-6.6.80-17.x86_64.rpm
 https://github.com/xenserver/xe-guest-utilities/releases/download/v6.6.80/xe-guest-utilities-xenstore-6.6.80-17.x86_64.rpm
+=======
+#cp vhd-util /usr/bin
+>>>>>>> update to overall build
