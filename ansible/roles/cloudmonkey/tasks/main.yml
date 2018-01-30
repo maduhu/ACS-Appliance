@@ -69,4 +69,12 @@
     state: latest
 
 - name: base configuration
-  shell: "cloudmonkey set prompt 'SBCM5>' && cloudmonkey set history_file /usr/share/cloudmonkey_history && cloudmonkey set log_file /var/log/cloudmonkey && cloudmonkey set log_file /var/log/cloud-cli.log && cloudmonkey set display json && cloudmonkey set apikey {{ cm_apikey }} && cloudmonkey set secretkey {{ cm_secretkey }} && cloudmonkey set url http://{{ hostvars[groups['primary_cs_manager'][0]]['ansible_ssh_host'] }}:8080/client/api"
+  shell: cloudmonkey {{ item }}
+  with_items:
+    - "set prompt '{{ bc_cmprompt }}>'"
+    - "set history_file /usr/share/cloudmonkey_history"
+    - "set log_file /var/log/cloudmonkey"
+    - "set display json"
+    - "set username admin"
+    - "set password password"
+    - "set url http://{{ bc_mgmtip }}:8080/client/api"
